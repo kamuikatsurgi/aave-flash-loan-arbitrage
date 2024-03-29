@@ -10,12 +10,12 @@ import {console} from "forge-std/Test.sol";
 
 contract Arbitrage is FlashLoanSimpleReceiverBase {
     address constant USDC_E_ADDRESS = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
-    address constant WBTC_ADDRESS = 0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6;
+    address constant WETH_ADDRESS = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
     address constant AAVE_ADDRESS_PROVIDER = 0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb;
     address constant UNISWAP_ROUTER_ADDRESS = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
     address constant SUSHISWAP_ROUTER_ADDRESS = 0x0aF89E1620b96170e2a9D0b68fEebb767eD044c3;
 
-    // We will set the pool fee to 0.3% because USDC.e/WBTC is a Medium Risk Pair
+    // We will set the pool fee to 0.3% because USDC.e/WETH is a Medium Risk Pair
     uint24 constant poolFee = 3000;
 
     address payable owner;
@@ -24,7 +24,7 @@ contract Arbitrage is FlashLoanSimpleReceiverBase {
     ISwapRouter sushiswapRouter = ISwapRouter(SUSHISWAP_ROUTER_ADDRESS);
 
     IERC20 usdc = IERC20(USDC_E_ADDRESS);
-    IERC20 wbtc = IERC20(WBTC_ADDRESS);
+    IERC20 weth = IERC20(WETH_ADDRESS);
 
     constructor() FlashLoanSimpleReceiverBase(IPoolAddressesProvider(AAVE_ADDRESS_PROVIDER))
     {
@@ -45,13 +45,13 @@ contract Arbitrage is FlashLoanSimpleReceiverBase {
         console.log("USDC.e Flash Loan from AAVE: ", amount);
         console.log("Premium: ", premium);
 
-        // SushiSwap USDC.e -> WBTC Swap
-        usdc.approve(address(sushiswapRouter), amount);
+        // UniSwap USDC.e -> WETH Swap
+        usdc.approve(address(uniswapRouter), amount);
 
         ISwapRouter.ExactInputSingleParams memory paramsOne = ISwapRouter
             .ExactInputSingleParams({
                 tokenIn: USDC_E_ADDRESS,
-                tokenOut: WBTC_ADDRESS,
+                tokenOut: WETH_ADDRESS,
                 fee: poolFee,
                 recipient: address(this),
                 deadline: block.timestamp,
@@ -60,26 +60,26 @@ contract Arbitrage is FlashLoanSimpleReceiverBase {
                 sqrtPriceLimitX96: 0
             });
 
-        uint256 amountOutWBTC = sushiswapRouter.exactInputSingle(paramsOne);
-        console.log("WBTC received from SushiSwap: ", amountOutWBTC);  
+        uint256 amountOutWETH = uniswapRouter.exactInputSingle(paramsOne);
+        console.log("WETH received from UniSwap: ", amountOutWETH);  
 
-        // UniSwap WBTC -> USDC.e Swap
-        wbtc.approve(address(uniswapRouter), amountOutWBTC);
+        // SushiSwap WETH -> USDC.e Swap
+        weth.approve(address(sushiswapRouter), amountOutWETH);
 
         ISwapRouter.ExactInputSingleParams memory paramsTwo = ISwapRouter
             .ExactInputSingleParams({
-                tokenIn: WBTC_ADDRESS,
+                tokenIn: WETH_ADDRESS,
                 tokenOut: USDC_E_ADDRESS,
                 fee: poolFee,
                 recipient: address(this),
                 deadline: block.timestamp,
-                amountIn: amountOutWBTC,
+                amountIn: amountOutWETH,
                 amountOutMinimum: 0,
                 sqrtPriceLimitX96: 0
             });
 
-        uint256 amountOutUSDC = uniswapRouter.exactInputSingle(paramsTwo);
-        console.log("USDC.e received from UniSwap: ", amountOutUSDC);      
+        uint256 amountOutUSDC = sushiswapRouter.exactInputSingle(paramsTwo);
+        console.log("USDC.e received from SushiSwap: ", amountOutUSDC);      
 
         // Approve the Aave Pool contract allowance to *pull* the owed amount
         uint256 amountOwed = amount + premium;
