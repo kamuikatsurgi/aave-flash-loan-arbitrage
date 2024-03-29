@@ -42,12 +42,11 @@ contract Arbitrage is FlashLoanSimpleReceiverBase {
         bytes calldata /* params */
     ) external override returns (bool) {
         // Additional logic goes here
-        console.log("Asset: ", asset);
-        console.log("USDC.e Amount received: ", amount);
+        console.log("USDC.e Flash Loan from AAVE: ", amount);
         console.log("Premium: ", premium);
 
-        // Uniswap USDC.e -> WBTC Swap
-        usdc.approve(address(uniswapRouter), amount);
+        // SushiSwap USDC.e -> WBTC Swap
+        usdc.approve(address(sushiswapRouter), amount);
 
         ISwapRouter.ExactInputSingleParams memory paramsOne = ISwapRouter
             .ExactInputSingleParams({
@@ -61,11 +60,11 @@ contract Arbitrage is FlashLoanSimpleReceiverBase {
                 sqrtPriceLimitX96: 0
             });
 
-        uint256 amountOutWBTC = uniswapRouter.exactInputSingle(paramsOne);
-        console.log("WBTC received from UniSwap: ", amountOutWBTC);  
+        uint256 amountOutWBTC = sushiswapRouter.exactInputSingle(paramsOne);
+        console.log("WBTC received from SushiSwap: ", amountOutWBTC);  
 
-        // Sushiswap WBTC -> USDC.e Swap
-        wbtc.approve(address(sushiswapRouter), amountOutWBTC);
+        // UniSwap WBTC -> USDC.e Swap
+        wbtc.approve(address(uniswapRouter), amountOutWBTC);
 
         ISwapRouter.ExactInputSingleParams memory paramsTwo = ISwapRouter
             .ExactInputSingleParams({
@@ -79,8 +78,8 @@ contract Arbitrage is FlashLoanSimpleReceiverBase {
                 sqrtPriceLimitX96: 0
             });
 
-        uint256 amountOutUSDC = sushiswapRouter.exactInputSingle(paramsTwo);
-        console.log("USDC.e received from SushiSwap: ", amountOutUSDC);      
+        uint256 amountOutUSDC = uniswapRouter.exactInputSingle(paramsTwo);
+        console.log("USDC.e received from UniSwap: ", amountOutUSDC);      
 
         // Approve the Aave Pool contract allowance to *pull* the owed amount
         uint256 amountOwed = amount + premium;
@@ -94,8 +93,6 @@ contract Arbitrage is FlashLoanSimpleReceiverBase {
         uint256 amount = _amount;
         bytes memory params = "0x";
         uint16 referralCode = 0;
-
-        console.log("Contract balance at (requestFlashLoan): ", IERC20(USDC_E_ADDRESS).balanceOf(address(this)));
 
         POOL.flashLoanSimple(
             receiverAddress,

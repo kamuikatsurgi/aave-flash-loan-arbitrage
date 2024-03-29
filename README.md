@@ -7,4 +7,4 @@ To get started:
 3. Duplicate the .env.example file and rename it to .env.
 4. Run `forge test --fork-url $POLYGON_MAINNET_URL -vv` to see logs.
 
-This tutorial provides a basic template to help you understand and build your flash loan arbitrage bot on Polygon POS. Make sure to customize and extend the code according to your requirements and risk tolerance.
+This tutorial provides a basic template to help you understand flash loan arbitrage on Polygon POS. Make sure to customize and extend the code according to your requirements and risk tolerance.

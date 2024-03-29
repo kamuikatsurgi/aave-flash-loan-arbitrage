@@ -16,7 +16,7 @@ contract ArbitrageTest is Test {
     }
 
     function test_arbitrage() public {
-        deal(USDC_E_ADDRESS, address(arbitrage), 1100e6, true);
+        deal(USDC_E_ADDRESS, address(arbitrage), 1050e6, true);
         console.log("Dealed USDC.e balance: ", IERC20(USDC_E_ADDRESS).balanceOf(address(arbitrage)));
         arbitrage.requestFlashLoan(USDC_E_ADDRESS, 1000e6);
     }
